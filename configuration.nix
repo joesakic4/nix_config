@@ -1,5 +1,3 @@
-# /etc/nixos/configuration.nix
-
 { config, pkgs, ... }:
 
 {
@@ -8,47 +6,40 @@
       ./hardware-configuration.nix
     ];
 
-  # ==========================================
-  # Boot Loader & Kernel
-  # ==========================================
-  # Use the systemd-boot EFI boot loader.
+  # ============================
+  # Boot & Kernel
+  # ============================
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-
-  # Use the latest stable Linux kernel
+  
+  # LATEST KERNEL (Crucial for new laptop hardware)
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  # ==========================================
-  # Networking & Hostname
-  # ==========================================
-  networking.hostName = "nixos-laptop"; # Define your hostname.
+  # ============================
+  # Networking
+  # ============================
+  networking.hostName = "nixos-daily"; 
   networking.networkmanager.enable = true;
 
-  # ==========================================
-  # Time & Locale
-  # ==========================================
-  time.timeZone = "America/New_York"; # Set your time zone.
+  # ============================
+  # Localization
+  # ============================
+  time.timeZone = "America/New_York"; # CHANGE THIS to your timezone
   i18n.defaultLocale = "en_US.UTF-8";
 
-  # ==========================================
-  # Desktop Environment (GNOME Example)
-  # ==========================================
-  # Enable the X11 windowing system.
+  # ============================
+  # Desktop Environment (GNOME)
+  # ============================
   services.xserver.enable = true;
-
-  # Enable the GNOME Desktop Environment.
   services.xserver.displayManager.gdm.enable = true;
   services.xserver.desktopManager.gnome.enable = true;
+  
+  # Keymap
+  services.xserver.xkb = { layout = "us"; variant = ""; };
 
-  # Configure keymap in X11
-  services.xserver.xkb = {
-    layout = "us";
-    variant = "";
-  };
-
-  # ==========================================
-  # Audio (PipeWire)
-  # ==========================================
+  # ============================
+  # Audio (Pipewire)
+  # ============================
   hardware.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
@@ -58,64 +49,53 @@
     pulse.enable = true;
   };
 
-  # ==========================================
+  # ============================
   # User Account
-  # ==========================================
-  users.users.YOUR_USERNAME_HERE = {
+  # ============================
+  users.users.YOUR_USERNAME_HERE = {  # <--- CHANGE THIS
     isNormalUser = true;
-    description = "Daily Driver User";
-    extraGroups = [ 
-      "networkmanager" 
-      "wheel"           # Enable sudo
-      "docker"          # Access Docker without sudo
-      "libvirtd"        # Access Virt-Manager without sudo
-    ];
+    description = "Daily Driver";
+    extraGroups = [ "networkmanager" "wheel" "docker" "libvirtd" ];
+    # Sets a default password of 'nixos' to ensure you can login first time.
+    # Change this immediately after reboot using the 'passwd' command.
+    initialPassword = "nixos"; 
   };
 
-  # ==========================================
-  # Software: Unfree & System Packages
-  # ==========================================
-  # Allow unfree packages (Required for VSCode, Brave, proprietary drivers)
+  # ============================
+  # Software & Packages
+  # ============================
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
-    # Core Tools
     vim
     wget
     git
     htop
-
-    # Your Requested Apps
     brave
     vscode
-    # Note: If you have issues with VSCode extensions, try 'vscode-fhs' instead.
-
+    
     # Virtualization Tools
     qemu_full
     virt-manager
     docker-compose
-    
-    # Required for Windows 11 VMs (TPM emulation)
-    swtpm
-    OVMFFull
+    swtpm       # TPM for Windows 11
+    OVMFFull    # UEFI for Windows 11
   ];
 
-  # ==========================================
-  # Virtualization Configuration
-  # ==========================================
+  # ============================
+  # Virtualization Config
+  # ============================
   
-  # 1. Docker
+  # Docker
   virtualisation.docker.enable = true;
-  # Optional: Clean up unused docker images weekly
-  virtualisation.docker.autoPrune.enable = true;
 
-  # 2. KVM / QEMU / Virt-Manager
+  # KVM / QEMU / Virt-Manager
   virtualisation.libvirtd = {
     enable = true;
     qemu = {
       package = pkgs.qemu_full;
       runAsRoot = true;
-      swtpm.enable = true; # Needed for TPM emulation (Windows 11)
+      swtpm.enable = true;
       ovmf = {
         enable = true;
         packages = [(pkgs.OVMF.override {
@@ -126,18 +106,12 @@
     };
   };
   
-  # Enable dconf (Required for virt-manager to save settings)
-  programs.dconf.enable = true;
-
-  # Enable USB redirection (Pass USB sticks to VMs)
+  programs.dconf.enable = true; # Needed for virt-manager settings
   virtualisation.spiceUSBRedirection.enable = true;
 
-  # ==========================================
-  # System State Version
-  # ==========================================
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It‘s perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  system.stateVersion = "23.11"; # Change this to your install version if different
+  # ============================
+  # System Version
+  # ============================
+  # Keep this same as the one generated by the installer!
+  system.stateVersion = "25.11"; 
 }
